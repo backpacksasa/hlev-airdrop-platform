@@ -7,16 +7,58 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Ethers.js from unpkg CDN -->
     <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <!-- Vercel Analytics - Simplified for GitHub Pages -->
-    <script type="module">
-        try {
-            const { inject, track } = await import('https://unpkg.com/@vercel/analytics@1.1.1/dist/index.js');
-            inject();
-            window.trackEvent = track;
-        } catch (error) {
-            console.log('Analytics not available in this environment');
-            window.trackEvent = function() {}; // Fallback function
+    <!-- Vercel Analytics with Live User Tracking -->
+    <script src="https://unpkg.com/@vercel/analytics@1.1.1/dist/index.umd.js"></script>
+    <script>
+        // Initialize Vercel Analytics
+        if (typeof window.va !== 'undefined') {
+            window.va.track = window.va.track || function() {};
+            window.trackEvent = window.va.track;
+            
+            // Enhanced live user tracking
+            window.trackEvent('Page View', {
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent,
+                screenResolution: screen.width + 'x' + screen.height,
+                language: navigator.language,
+                referrer: document.referrer || 'direct',
+                deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop'
+            });
+            
+            console.log('✅ Vercel Analytics initialized with live tracking');
+        } else {
+            console.log('📊 Analytics fallback mode');
+            window.trackEvent = function(event, data) {
+                console.log('Analytics Event:', event, data);
+            };
         }
+        
+        // Real-time user activity tracking
+        let userActivityData = {
+            sessionStart: Date.now(),
+            pageViews: 1,
+            interactions: 0,
+            timeOnPage: 0
+        };
+        
+        // Track user interactions
+        document.addEventListener('click', function(e) {
+            userActivityData.interactions++;
+            window.trackEvent('User Interaction', {
+                element: e.target.tagName,
+                className: e.target.className,
+                totalInteractions: userActivityData.interactions
+            });
+        });
+        
+        // Track time on page every 30 seconds
+        setInterval(function() {
+            userActivityData.timeOnPage = Math.floor((Date.now() - userActivityData.sessionStart) / 1000);
+            window.trackEvent('Time on Page', {
+                seconds: userActivityData.timeOnPage,
+                interactions: userActivityData.interactions
+            });
+        }, 30000);
     </script>
     <style>
         * {
@@ -471,12 +513,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('HLEV Airdrop app loaded');
             
-            // Track page load
+            // Enhanced page load tracking
             if (window.trackEvent) {
-                window.trackEvent('Airdrop Page Loaded', {
-                    userAgent: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
-                    referrer: document.referrer || 'direct'
+                window.trackEvent('HLEV Airdrop Loaded', {
+                    timestamp: new Date().toISOString(),
+                    deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                    referrer: document.referrer || 'direct',
+                    userAgent: navigator.userAgent.substring(0, 50) + '...',
+                    viewport: window.innerWidth + 'x' + window.innerHeight,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language
                 });
+                
+                // Track unique session
+                const sessionId = Date.now() + '-' + Math.random().toString(36).substring(2);
+                localStorage.setItem('hlevSessionId', sessionId);
+                
+                console.log('📊 Live user tracking active - Session:', sessionId);
             }
             
             // Initialize UI immediately
