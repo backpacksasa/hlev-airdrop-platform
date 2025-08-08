@@ -604,17 +604,17 @@
                         console.log('Contract not deployed yet, checking balance only');
                     }
                     
-                    // Eligibility check: Minimum 0.01 HYPE required (representing $HSTR/$LIQD holdings or NFT ownership)
+                    // Eligibility check: Minimum 1 HYPE required (representing $HSTR/$LIQD holdings or NFT ownership)
                     const hyeAmount = parseFloat(hyeInEther);
                     
-                    // Require minimum 0.01 HYPE for eligibility
-                    isEligible = hyeAmount >= 0.01;
+                    // Require minimum 1 HYPE for eligibility
+                    isEligible = hyeAmount >= 1;
                     
                     if (isEligible) {
-                        console.log(`✅ ELIGIBLE: User has ${hyeAmount} HYPE (≥0.01 required)`);
+                        console.log(`✅ ELIGIBLE: User has ${hyeAmount} HYPE (≥1 required)`);
                         console.log('In production: This would verify ≥10k $HSTR or $LIQD tokens, NFT ownership, or presale participation');
                     } else {
-                        console.log(`❌ NOT ELIGIBLE: User has ${hyeAmount} HYPE, minimum 0.01 HYPE required`);
+                        console.log(`❌ NOT ELIGIBLE: User has ${hyeAmount} HYPE, minimum 1 HYPE required`);
                     }
                 } else {
                     // Without ethers, assume eligible (wallet connected successfully)
