@@ -642,10 +642,11 @@
             ]
         };
 
-        // Initialize countdown timer
+        // Initialize countdown timer with fixed end date
         function initializeCountdown() {
-            const endDate = new Date();
-            endDate.setDate(endDate.getDate() + 30);
+            // Fixed end date - set this to your actual airdrop end date
+            // Using September 7, 2025 as example - change this to your preferred date
+            const endDate = new Date('2025-09-07T23:59:59Z'); // Fixed end date
             
             function updateCountdown() {
                 const now = new Date().getTime();
