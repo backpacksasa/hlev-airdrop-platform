@@ -7,35 +7,69 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Ethers.js from unpkg CDN -->
     <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <!-- Vercel Analytics - Official Integration -->
-    <script>
-        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    <!-- Vercel Analytics - Universal Integration -->
+    <script type="module">
+        // Import Vercel Analytics
+        try {
+            const { inject, track } = await import('https://unpkg.com/@vercel/analytics@1.5.0/dist/index.js');
+            inject({
+                mode: 'auto',
+                debug: false
+            });
+            window.va = { track };
+            window.vaLoaded = true;
+            console.log('✅ Vercel Analytics loaded via module');
+        } catch (error) {
+            // Fallback for non-Vercel environments
+            window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+            window.vaLoaded = false;
+            console.log('📊 Analytics fallback initialized');
+        }
     </script>
-    <script defer src="/_vercel/insights/script.js"></script>
+    <script defer src="/_vercel/insights/script.js" onerror="console.log('Vercel script not available - using fallback')"></script>
     <script>
         // Initialize analytics tracking
         function initAnalytics() {
-            // Page view tracking
-            if (window.va) {
-                window.va('track', 'HLEV Airdrop Loaded', {
-                    timestamp: new Date().toISOString(),
-                    deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
-                    referrer: document.referrer || 'direct',
-                    viewport: window.innerWidth + 'x' + window.innerHeight,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    language: navigator.language
-                });
-                
-                console.log('✅ Vercel Analytics active');
-                window.trackEvent = function(event, data) {
-                    window.va('track', event, data);
-                };
-            } else {
-                console.log('📊 Analytics fallback mode');
-                window.trackEvent = function(event, data) {
-                    console.log('Analytics Event:', event, data);
-                };
-            }
+            setTimeout(() => {
+                // Check if analytics loaded
+                if (window.va && (window.vaLoaded || typeof window.va === 'function')) {
+                    // Use proper Vercel Analytics API
+                    if (window.va.track) {
+                        window.va.track('HLEV Airdrop Loaded', {
+                            timestamp: new Date().toISOString(),
+                            deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                            referrer: document.referrer || 'direct',
+                            viewport: window.innerWidth + 'x' + window.innerHeight,
+                            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            language: navigator.language
+                        });
+                        
+                        window.trackEvent = function(event, data) {
+                            window.va.track(event, data);
+                        };
+                    } else {
+                        // Fallback for queue-based analytics
+                        window.va('track', 'HLEV Airdrop Loaded', {
+                            timestamp: new Date().toISOString(),
+                            deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                            referrer: document.referrer || 'direct',
+                            viewport: window.innerWidth + 'x' + window.innerHeight,
+                            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            language: navigator.language
+                        });
+                        
+                        window.trackEvent = function(event, data) {
+                            window.va('track', event, data);
+                        };
+                    }
+                    console.log('✅ Vercel Analytics active');
+                } else {
+                    console.log('📊 Analytics fallback mode');
+                    window.trackEvent = function(event, data) {
+                        console.log('Analytics Event:', event, data);
+                    };
+                }
+            }, 500);
             
             // Session tracking
             const sessionId = Date.now() + '-' + Math.random().toString(36).substring(2);
