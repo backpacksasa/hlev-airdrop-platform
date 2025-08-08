@@ -7,58 +7,71 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Ethers.js from unpkg CDN -->
     <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <!-- Vercel Analytics with Live User Tracking -->
-    <script src="https://unpkg.com/@vercel/analytics@1.1.1/dist/index.umd.js"></script>
+    <!-- Vercel Analytics - Official Integration -->
     <script>
-        // Initialize Vercel Analytics
-        if (typeof window.va !== 'undefined') {
-            window.va.track = window.va.track || function() {};
-            window.trackEvent = window.va.track;
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script>
+        // Initialize analytics tracking
+        function initAnalytics() {
+            // Page view tracking
+            if (window.va) {
+                window.va('track', 'HLEV Airdrop Loaded', {
+                    timestamp: new Date().toISOString(),
+                    deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                    referrer: document.referrer || 'direct',
+                    viewport: window.innerWidth + 'x' + window.innerHeight,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language
+                });
+                
+                console.log('✅ Vercel Analytics active');
+                window.trackEvent = function(event, data) {
+                    window.va('track', event, data);
+                };
+            } else {
+                console.log('📊 Analytics fallback mode');
+                window.trackEvent = function(event, data) {
+                    console.log('Analytics Event:', event, data);
+                };
+            }
             
-            // Enhanced live user tracking
-            window.trackEvent('Page View', {
-                timestamp: Date.now(),
-                userAgent: navigator.userAgent,
-                screenResolution: screen.width + 'x' + screen.height,
-                language: navigator.language,
-                referrer: document.referrer || 'direct',
-                deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop'
-            });
-            
-            console.log('✅ Vercel Analytics initialized with live tracking');
-        } else {
-            console.log('📊 Analytics fallback mode');
-            window.trackEvent = function(event, data) {
-                console.log('Analytics Event:', event, data);
-            };
+            // Session tracking
+            const sessionId = Date.now() + '-' + Math.random().toString(36).substring(2);
+            localStorage.setItem('hlevSessionId', sessionId);
+            console.log('📊 Session ID:', sessionId);
         }
-        
-        // Real-time user activity tracking
-        let userActivityData = {
-            sessionStart: Date.now(),
-            pageViews: 1,
-            interactions: 0,
-            timeOnPage: 0
-        };
         
         // Track user interactions
         document.addEventListener('click', function(e) {
-            userActivityData.interactions++;
-            window.trackEvent('User Interaction', {
-                element: e.target.tagName,
-                className: e.target.className,
-                totalInteractions: userActivityData.interactions
-            });
+            if (window.trackEvent) {
+                window.trackEvent('User Interaction', {
+                    element: e.target.tagName,
+                    className: e.target.className,
+                    timestamp: Date.now()
+                });
+            }
         });
         
         // Track time on page every 30 seconds
+        let sessionStart = Date.now();
         setInterval(function() {
-            userActivityData.timeOnPage = Math.floor((Date.now() - userActivityData.sessionStart) / 1000);
-            window.trackEvent('Time on Page', {
-                seconds: userActivityData.timeOnPage,
-                interactions: userActivityData.interactions
-            });
+            if (window.trackEvent) {
+                const timeOnPage = Math.floor((Date.now() - sessionStart) / 1000);
+                window.trackEvent('Time on Page', {
+                    seconds: timeOnPage,
+                    timestamp: Date.now()
+                });
+            }
         }, 30000);
+        
+        // Initialize when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAnalytics);
+        } else {
+            initAnalytics();
+        }
     </script>
     <style>
         * {
